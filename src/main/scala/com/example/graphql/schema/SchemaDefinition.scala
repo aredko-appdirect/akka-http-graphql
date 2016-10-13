@@ -26,6 +26,7 @@ object SchemaDefinition {
     fields[Unit, User](
       Field("id", LongType, Some("User id"), tags = ProjectionName("_id") :: Nil, resolve = _.value.id),
       Field("email", StringType, Some("User email address"), resolve = _.value.email),
+      Field("activated", BooleanType, Some("User email address"), resolve = _.value.activated),
       Field("firstName", OptionType(StringType), Some("User first name"), resolve = _.value.firstName),
       Field("lastName", OptionType(StringType), Some("User last name"), resolve = _.value.lastName),
       Field("roles", ListType(RoleEnumType), Some("User roles"), resolve = _.value.roles)
@@ -36,9 +37,14 @@ object SchemaDefinition {
 
   val Query = ObjectType(
     "Query", fields[UserRepository, Unit](
-      Field("user", UserType, arguments = ID :: Nil, resolve = (ctx) => ctx.ctx.findById(ctx.arg(ID))),
+      Field("user", OptionType(UserType), arguments = ID :: Nil, resolve = (ctx) => ctx.ctx.findById(ctx.arg(ID))),
       Field("users", ListType(UserType), resolve = (ctx) => ctx.ctx.findAll())
     ))
+    
+  val Mutation = ObjectType(
+    "Mutation", fields[UserRepository, Unit](
+      Field("activateUser", OptionType(UserType), arguments = ID :: Nil, resolve = (ctx) => ctx.ctx.activateById(ctx.arg(ID)))
+    )) 
 
-  val UserSchema = Schema(Query)
+  val UserSchema = Schema(Query, Some(Mutation))
 }
