@@ -16,6 +16,7 @@ import scala.util.{Success, Failure}
 import com.example.graphql.schema.SchemaDefinition
 import com.example.graphql.service.UserRepository
 import akka.actor.ActorSystem
+import com.example.graphql.service.MongoUserRepository
 
 class UserRoute(implicit val system: ActorSystem) {
   import system.dispatcher
@@ -25,7 +26,7 @@ class UserRoute(implicit val system: ActorSystem) {
       entity(as[String]) { document =>
         QueryParser.parse(document) match {
           case Success(queryAst) =>
-            complete(Executor.execute(SchemaDefinition.UserSchema, queryAst, new UserRepository)
+            complete(Executor.execute(SchemaDefinition.UserSchema, queryAst, new MongoUserRepository)
               .map(OK -> _)
               .recover {
                 case error: QueryAnalysisError => BadRequest -> error.resolveError

@@ -1,16 +1,13 @@
 package com.example.graphql.schema
 
 import sangria.schema._
-import sangria.schema.Action.defaultAction
+import sangria.schema.Action._
 import com.example.graphql.model.Role
 import com.example.graphql.model.User
-import com.example.graphql.service.UserRepository
+import com.example.graphql.service.Repository
 import com.example.graphql.model.Address
 import com.example.graphql.model.Company
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import scala.util.Try
-import sangria.validation.ValueCoercionViolation
+import scala.concurrent.Future
 
 /**
  * Defines a GraphQL schema for the current project
@@ -52,7 +49,7 @@ object SchemaDefinition {
     "User Type",
     interfaces[Unit, User](),
     fields[Unit, User](
-      Field("id", LongType, Some("User id"), tags = ProjectionName("_id") :: Nil, resolve = _.value.id),
+      Field("id", LongType, Some("User id"), tags = ProjectionName("id") :: Nil, resolve = _.value.id),
       Field("email", StringType, Some("User email address"), resolve = _.value.email),
       Field("created", LocalDateTimeType, Some("User creation date"), resolve = _.value.created),
       Field("locale", LocaleType, Some("User locale"), resolve = _.value.locale),
@@ -70,15 +67,15 @@ object SchemaDefinition {
   val EmailArg = Argument("email", StringType, description = "User email address")
   val FirstNameArg = Argument("firstName", OptionInputType(StringType), description = "User first name")
   val LastNameArg = Argument("lastName", OptionInputType(StringType), description = "User last name")
-
+  
   val Query = ObjectType(
-    "Query", fields[UserRepository, Unit](
+    "Query", fields[Repository, Unit](
       Field("user", OptionType(UserType), arguments = ID :: Nil, resolve = (ctx) => ctx.ctx.findById(ctx.arg(ID))),
-      Field("users", ListType(UserType), resolve = (ctx) => ctx.ctx.findAll())
+      Field("users", ListType(UserType), resolve = Projector((ctx, f) => ctx.ctx.findAll(f.map(_.name))))
     ))
     
   val Mutation = ObjectType(
-    "Mutation", fields[UserRepository, Unit](
+    "Mutation", fields[Repository, Unit](
       Field("activateUser", OptionType(UserType), arguments = ID :: Nil, 
         resolve = (ctx) => ctx.ctx.activateById(ctx.arg(ID))),
       Field("addUser", OptionType(UserType), arguments = EmailArg :: FirstNameArg :: LastNameArg :: RolesArg :: Nil, 
